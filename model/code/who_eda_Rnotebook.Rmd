@@ -3,6 +3,10 @@ title: "Exploratory Data Analysis"
 output:
   pdf_document: 
     number_sections: true
+    fig_width: 6
+    fig_height: 4
+    fig_caption: true
+    fig_crop: true
   html_notebook: 
     number_sections: true
 ---
@@ -33,7 +37,9 @@ library(tidyverse)
 library(readxl)
 library(ggplot2)
 library(stringr)
-options(scipen=999)
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=55),tidy=TRUE)
+options(scipen=999,width=50)
 
 rm(list=ls())
 
@@ -75,7 +81,7 @@ Incident infections are the number of estimated people being infected with TB ea
 
 HIV is an important  factor to consider, given that Kenya has relatively high HIV/TB coinfection and because HIV impacts the likelihood of contracting TB, becoming infectious or of becoming severely ill. 
 
-```{r}
+```{r,fig.width = 6, fig.height = 4}
 #select relevant variables related to incidence
 inc_data= tbData %>% filter(variable_name %in% c("e_inc_num","e_inc_num_lo","e_inc_num_hi")) %>% mutate(var="e_inc_num") 
 hiv_inc=tbData %>% filter(variable_name%in% c("e_inc_tbhiv_num","e_inc_tbhiv_num_lo","e_inc_tbhiv_num_hi"))%>% mutate(var="e_inc_tbhiv_num")
@@ -103,5 +109,39 @@ ggplot(hiv_perc_inc,aes(x=year,y=value,group=variable_name,color=est_type))+geom
 
 
 ```
+
+## Exploring mean estimates of key factors - population, incidence, case detection, mortality (for whole population)
+
+Key definitions from WHO indicator metadata registry and estimate methedology appendix \
+- Case Detection rate (%) : Proportion of estimated new and relapse TB (incident) cases diagnosed in a year \
+-Number of deaths: Product of incidence and case fatality rate\
+-Case fatality rate: risk of death among people with active (incident) TB, adapte dto account fro low covergae/reporting\
+
+```{r, fig.width = 6, fig.height = 4}
+#Collect key factors relevant to understanding the dynamics of TB transmission
+key_fact=tbData %>% filter(variable_name %in% c("e_pop_num","e_inc_num","e_inc_rr_num","e_mort_num","c_cdr","cfr","cfr_pct")) %>% 
+  select(variable_name,year,value) %>% spread(variable_name,value)
+
+#Conduct additional caluclations fo rates or use rates to estimate numbers
+key_fact$calc_cfr_inc=100*(key_fact$e_mort_num/key_fact$e_inc_num)
+key_fact$calc_case_detect=key_fact$c_cdr/100*key_fact$e_inc_num
+key_fact$calc_cfr_case=100*(key_fact$e_mort_num/key_fact$calc_case_detect)
+key_fact$deaths_cal=key_fact$cfr*key_fact$e_inc_num
+
+#Plot key factors with absolute numbers (other than population)
+key_fact_num=key_fact %>% select(year,e_inc_num,calc_case_detect,e_mort_num) %>% gather("variable","value",2:4)
+ggplot(key_fact_num,aes(x=year,y=value,group=variable,colour=variable))+geom_point()+geom_line()+theme_bw()+
+  labs(title="Number of incident cases, cases detected and deaths")+ylab("Number of individuals")+theme(legend.position = "bottom")
+
+#Plot key factors which are rates
+key_fact_rate=key_fact %>% select(year,c_cdr,cfr_pct) %>% gather("variable","value",2:3)
+ggplot(key_fact_rate,aes(x=year,y=value,group=variable,colour=variable))+geom_point()+geom_line()+theme_bw()+
+  labs(title="Case detection and case fatality rates over time")+ylab("Percent(%)")+theme(legend.position = "bottom")
+
+```
+
+
+
+
 
 
