@@ -138,6 +138,9 @@ key_fact_rate=key_fact %>% select(year,c_cdr,cfr_pct) %>% gather("variable","val
 ggplot(key_fact_rate,aes(x=year,y=value,group=variable,colour=variable))+geom_point()+geom_line()+theme_bw()+
   labs(title="Case detection and case fatality rates over time")+ylab("Percent(%)")+theme(legend.position = "bottom")
 
+
+
+
 ```
 
 
