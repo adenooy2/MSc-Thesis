@@ -1,0 +1,107 @@
+---
+title: "Exploratory Data Analysis"
+output:
+  pdf_document: 
+    number_sections: true
+  html_notebook: 
+    number_sections: true
+---
+# Personal Information
+Name: Alexandra de Nooy \
+Student ID: 14581728\
+Email: alexandra.de.nooy@student.uva.nl or denooy.alex@gmail.com\
+Submitted on: 22/03/2023\
+Github link: 
+
+# Data Context
+This exploratory data analysis is conducted usinf R and RStudio. There are two main sets of data to be considered, linked to the two main sections of the project.
+
+The first set of data represents the baseline or standard of care output runs produced by the existing patient pathway model. For the baseline there are 15 data output files (in csv format). Multiple files had been generated to account for model stochasticity, with the results of each simulation being based on a different set of random probabilities. The data files have a consistent structure and represent the population of indiviudals who move through the TB diagnostic patient pathway. In this, each column represents either a patient disease status or a point in the patient pathway that the indiviudal may or may not have reached.
+
+The second data set consists of TB burden estimates for Kenya produced by the World Heath Organization as well as the accompanying data dictionary. The estimates cover a range of data variables and their estimated values between the years 2000 and 2022. Several key variables include estimates on TB incidence (new cases), notifications (diagnoses) and deaths. Estimates are also provided for different groups of individuals (for example HIV postive patients) and for different tpes of TB.
+
+
+# Data Description: Baseline TB model
+
+
+
+# Data Description: WHO Tuberculosis Data
+
+```{r, echo=FALSE,message=FALSE}
+library(tidyverse)
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+library(stringr)
+options(scipen=999)
+
+rm(list=ls())
+
+
+```
+
+## Load and merge WHO TB burden data and data dictionary
+```{r}
+
+#Path to directory
+basePath="/Users/adenooy/Library/CloudStorage/OneDrive-Personal/UVA/Thesis/MSc-Thesis/"
+
+#Load data dictionary
+datadict=read.csv(paste(basePath,"data/dynamic/TB_data_dictionary_2024-01-30.csv",sep=""))
+colnames(datadict)
+
+print(datadict[1:3,])
+
+#Load TB data
+tb_estimates=read_excel(paste(basePath,"data/dynamic/kenya_tb_burden.xlsx",sep=""))
+colnames(tb_estimates)
+print(tb_estimates[1:3,])
+
+#Merge tb data with data dictionary
+tbData=tb_estimates %>% gather("variable_name","value",7:50) %>% left_join(datadict)
+
+
+#remove unnecessary regional columns, blank code_list column
+tbData=subset(tbData, select = -c(iso2,iso3,iso_numeric,g_whoregion,code_list) )
+print(tbData[1:5,])
+
+
+
+```
+
+## Exploring new incident infections (all infections and HIV)
+
+Incident infections are the number of estimated people being infected with TB each year. The number of new infections is an estimate and is different from the number of reported cases or diagnoses - which is reliant on the identification, testing and treating of people with TB.  This data represent a key element in the transmisison model and it is important in understanding the past dynamics of TB in kenya and provides an idea on the current trend. 
+
+HIV is an important  factor to consider, given that Kenya has relatively high HIV/TB coinfection and because HIV impacts the likelihood of contracting TB, becoming infectious or of becoming severely ill. 
+
+```{r}
+#select relevant variables related to incidence
+inc_data= tbData %>% filter(variable_name %in% c("e_inc_num","e_inc_num_lo","e_inc_num_hi")) %>% mutate(var="e_inc_num") 
+hiv_inc=tbData %>% filter(variable_name%in% c("e_inc_tbhiv_num","e_inc_tbhiv_num_lo","e_inc_tbhiv_num_hi"))%>% mutate(var="e_inc_tbhiv_num")
+hiv_perc_inc=tbData %>% filter(variable_name%in% c("e_tbhiv_prct","e_tbhiv_prct_lo","e_tbhiv_prct_hi"))%>% mutate(var="e_tbhiv_prct")
+
+#label upper, lower and mean estimates
+all_inc=rbind(inc_data,hiv_inc)
+all_inc$est_type="Mean"
+all_inc$est_type[grepl("_lo",all_inc$variable_name,fixed=TRUE)==TRUE]="Lower"
+all_inc$est_type[grepl("_hi",all_inc$variable_name,fixed=TRUE)==TRUE]="Upper"
+
+hiv_perc_inc$est_type="Mean"
+hiv_perc_inc$est_type[grepl("_lo",hiv_perc_inc$variable_name,fixed=TRUE)==TRUE]="Lower"
+hiv_perc_inc$est_type[grepl("_hi",hiv_perc_inc$variable_name,fixed=TRUE)==TRUE]="Upper"
+
+#Incident cases (all and HIV)
+ggplot(all_inc,aes(x=year,y=value,group=variable_name,color=est_type))+geom_point()+
+  geom_line()+theme_bw()+xlab("Year")+ylab("Number of cases")+
+  labs(title="Estimated number of new cases per year")+theme(legend.position = "bottom")+facet_wrap(.~var)
+
+#Percentage of new cases HIV positive
+ggplot(hiv_perc_inc,aes(x=year,y=value,group=variable_name,color=est_type))+geom_point()+
+  geom_line()+theme_bw()+xlab("Year")+ylab("Number of cases")+
+  labs(title="Estimated number of new cases per year")+theme(legend.position = "bottom")+facet_wrap(.~var)
+
+
+```
+
+
