@@ -25,12 +25,6 @@ The first set of data represents the baseline or standard of care output runs pr
 The second data set consists of TB burden estimates for Kenya produced by the World Heath Organization as well as the accompanying data dictionary. The estimates cover a range of data variables and their estimated values between the years 2000 and 2022. Several key variables include estimates on TB incidence (new cases), notifications (diagnoses) and deaths. Estimates are also provided for different groups of individuals (for example HIV postive patients) and for different tpes of TB.
 
 
-# Data Description: Baseline TB model
-
-
-
-# Data Description: WHO Tuberculosis Data
-
 ```{r, echo=FALSE,message=FALSE}
 library(tidyverse)
 library(tidyverse)
@@ -45,6 +39,38 @@ rm(list=ls())
 
 
 ```
+
+# Data Description: Baseline TB model
+
+## Load baseline data
+
+```{r}
+#Set path to baseline data
+baseline_path="/Users/adenooy/Library/CloudStorage/OneDrive-Personal/UVA/Thesis/MSc-Thesis/data/static/output/"
+
+#Determine how many files
+files=list.files(baseline_path)
+num_files=length(files)
+print(paste("Number of baseline files: " ,num_files,sep=""))
+```
+
+## Explore variables and format of one baseline file
+Each baseline data file represents a population of individuals (one per row) and various columns representing the different states or points in the patient pathway reached by each individual. 
+```{r}
+b_data=read_excel(paste(baseline_path,files[1],sep=""))
+
+print(paste("Each data file consists of ",dim(b_data)[1]," rows and ",dim(b_data)[2]," columns",sep=""))
+
+colnames(b_data)
+
+print(b_data[1:3,])
+
+```
+
+
+# Data Description: WHO Tuberculosis Data
+
+
 
 ## Load and merge WHO TB burden data and data dictionary
 ```{r}
@@ -77,7 +103,7 @@ print(tbData[1:5,])
 
 ## Exploring new incident infections (all infections and HIV)
 
-Incident infections are the number of estimated people being infected with TB each year. The number of new infections is an estimate and is different from the number of reported cases or diagnoses - which is reliant on the identification, testing and treating of people with TB.  This data represent a key element in the transmisison model and it is important in understanding the past dynamics of TB in kenya and provides an idea on the current trend. 
+Incident infections are the number of estimated people being infected with and acquiring active TB each year. The number of new infections is an estimate and is different from the number of reported cases or diagnoses - which is reliant on the identification, testing and treating of people with TB.  This data represents a key element in the transmisison model and it is important in understanding the past dynamics of TB in kenya and provides an idea on the current trend. 
 
 HIV is an important  factor to consider, given that Kenya has relatively high HIV/TB coinfection and because HIV impacts the likelihood of contracting TB, becoming infectious or of becoming severely ill. 
 
@@ -122,20 +148,26 @@ Key definitions from WHO indicator metadata registry and estimate methedology ap
 key_fact=tbData %>% filter(variable_name %in% c("e_pop_num","e_inc_num","e_inc_rr_num","e_mort_num","c_cdr","cfr","cfr_pct")) %>% 
   select(variable_name,year,value) %>% spread(variable_name,value)
 
+
 #Conduct additional caluclations fo rates or use rates to estimate numbers
 key_fact$calc_cfr_inc=100*(key_fact$e_mort_num/key_fact$e_inc_num)
 key_fact$calc_case_detect=key_fact$c_cdr/100*key_fact$e_inc_num
 key_fact$calc_cfr_case=100*(key_fact$e_mort_num/key_fact$calc_case_detect)
 key_fact$deaths_cal=key_fact$cfr*key_fact$e_inc_num
 
+#Add user friendly labels
+variable=c("e_pop_num","e_inc_num","e_inc_rr_num","e_mort_num","c_cdr","cfr","cfr_pct","calc_case_detect")
+labels=c("Population","Incident Cases","Incident RR Cases","Deaths","Case Detection Rate","Case fatality Rate","Case Fatality Rate (%)","Cases Detected")
+labs=data.frame(cbind(variable,labels))
+
 #Plot key factors with absolute numbers (other than population)
-key_fact_num=key_fact %>% select(year,e_inc_num,calc_case_detect,e_mort_num) %>% gather("variable","value",2:4)
-ggplot(key_fact_num,aes(x=year,y=value,group=variable,colour=variable))+geom_point()+geom_line()+theme_bw()+
+key_fact_num=key_fact %>% select(year,e_inc_num,calc_case_detect,e_mort_num) %>% gather("variable","value",2:4) %>% left_join(labs)
+ggplot(key_fact_num,aes(x=year,y=value,group=variable,colour=labels))+geom_point()+geom_line()+theme_bw()+
   labs(title="Number of incident cases, cases detected and deaths")+ylab("Number of individuals")+theme(legend.position = "bottom")
 
 #Plot key factors which are rates
-key_fact_rate=key_fact %>% select(year,c_cdr,cfr_pct) %>% gather("variable","value",2:3)
-ggplot(key_fact_rate,aes(x=year,y=value,group=variable,colour=variable))+geom_point()+geom_line()+theme_bw()+
+key_fact_rate=key_fact %>% select(year,c_cdr,cfr_pct) %>% gather("variable","value",2:3)%>% left_join(labs)
+ggplot(key_fact_rate,aes(x=year,y=value,group=variable,colour=labels))+geom_point()+geom_line()+theme_bw()+
   labs(title="Case detection and case fatality rates over time")+ylab("Percent(%)")+theme(legend.position = "bottom")
 
 
