@@ -56,6 +56,9 @@ print(paste("Number of baseline files: " ,num_files,sep=""))
 
 ## Explore variables and format of one baseline file
 Each baseline data file represents a population of individuals (one per row) and various columns representing the different states or points in the patient pathway reached by each individual. 
+
+### File Structure
+
 ```{r}
 b_data=read_excel(paste(baseline_path,files[1],sep=""))
 
@@ -64,6 +67,40 @@ print(paste("Each data file consists of ",dim(b_data)[1]," rows and ",dim(b_data
 colnames(b_data)
 
 print(b_data[1:3,])
+
+#summary(b_data)
+
+```
+### HIV and TB summary
+
+```{r}
+#Group by hiv and TB status and count
+hiv_tb_counts=b_data %>% group_by(tb_status,hiv) %>% count() 
+hiv_tb_counts$hiv_status="hiv_pos"
+hiv_tb_counts$hiv_status[hiv_tb_counts$hiv==0]="hiv_neg"
+hiv_tb_counts$hiv=NULL
+hiv_tb_counts=hiv_tb_counts%>% spread(hiv_status,n)
+
+print(hiv_tb_counts)
+
+#Summarise counts
+print(paste("Total HIV positive: ", sum(hiv_tb_counts$hiv_pos),sep=""))
+print(paste("Total HIV Negative: ", sum(hiv_tb_counts$hiv_neg),sep=""))
+print(paste("Total EPTB: ", hiv_tb_counts$hiv_neg[hiv_tb_counts$tb_status=="eptb"]+hiv_tb_counts$hiv_pos[hiv_tb_counts$tb_status=="eptb"],sep=""))
+print(paste("Total PTB: ", hiv_tb_counts$hiv_neg[hiv_tb_counts$tb_status=="ptb"]+hiv_tb_counts$hiv_pos[hiv_tb_counts$tb_status=="ptb"],sep=""))
+print(paste("Total TB positive: ", hiv_tb_counts$hiv_neg[hiv_tb_counts$tb_status=="eptb"]+hiv_tb_counts$hiv_pos[hiv_tb_counts$tb_status=="eptb"]+hiv_tb_counts$hiv_neg[hiv_tb_counts$tb_status=="ptb"]+hiv_tb_counts$hiv_pos[hiv_tb_counts$tb_status=="ptb"],sep=""))
+print(paste("Total TB Negative: ", hiv_tb_counts$hiv_neg[hiv_tb_counts$tb_status=="tb_negative"]+hiv_tb_counts$hiv_pos[hiv_tb_counts$tb_status=="tb_negative"],sep=""))
+
+```
+
+
+### TB patient pathway summary
+Given the format of the model, it is useful to summarise the number of individuals reaching key points in the patient pathway. An initial analysis is conducted only for those people with TB. Based on descriptions of the model, key variables representing some some of these points are:
+
+
+```{r}
+#Filter to only those with TB
+b_data_tb=b_data %>% filter(tb_present==1)
 
 ```
 
@@ -176,7 +213,18 @@ ggplot(key_fact_rate,aes(x=year,y=value,group=variable,colour=labels))+geom_poin
 ```
 
 
+## Set up calibration data for transmission model
+
+The transmission model will be calibrated against data from this set. In this case incidence data over time will be the key comparator, however, later it will be useful to compare other variables - like cases detected.
+
+```{r}
+#Collect incidence data in correct format - key variables and wide format
+cal_data=all_inc %>% select(year, var,est_type,value) %>% spread(est_type,value) %>% filter(var=="e_inc_num")
+
+#Save data
+write.csv(cal_data,"/Users/adenooy/Library/CloudStorage/OneDrive-Personal/UVA/Thesis/MSc-Thesis/data/dynamic/calibration_incidence.csv")
 
 
+```
 
 
