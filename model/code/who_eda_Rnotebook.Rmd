@@ -33,7 +33,7 @@ library(ggplot2)
 library(stringr)
 library(knitr)
 opts_chunk$set(tidy.opts=list(width.cutoff=55),tidy=TRUE)
-options(scipen=999,width=50)
+options(scipen=999,width=70)
 
 rm(list=ls())
 
@@ -64,13 +64,26 @@ b_data=read_excel(paste(baseline_path,files[1],sep=""))
 
 print(paste("Each data file consists of ",dim(b_data)[1]," rows and ",dim(b_data)[2]," columns",sep=""))
 
+#List of column names
 colnames(b_data)
 
 print(b_data[1:3,])
 
-#summary(b_data)
+#Type of each column
+sapply(b_data, class)
 
 ```
+Notably there are many columns in the dataframe listed as numeric, but only have values 0-1
+
+### Missing Data
+
+```{r}
+# count the missing values by column wise
+print("Count of missing values by column wise")
+sapply(b_data, function(x) sum(is.na(x)))
+```
+
+
 ### HIV and TB summary
 
 ```{r}

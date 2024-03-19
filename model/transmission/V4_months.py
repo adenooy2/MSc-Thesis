@@ -1,5 +1,5 @@
 """
-Python model 'V4.py'
+Python model 'V4_months.py'
 Translated using PySD
 """
 
@@ -24,10 +24,10 @@ component = Component()
 #######################################################################
 
 _control_vars = {
-    "initial_time": lambda: 2000,
-    "final_time": lambda: 2023,
+    "initial_time": lambda: 0,
+    "final_time": lambda: 276,
     "time_step": lambda: 1,
-    "saveper": lambda: time_step(),
+    "saveper": lambda: 12,
 }
 
 
@@ -45,7 +45,7 @@ def time():
 
 
 @component.add(
-    name="FINAL TIME", units="Year", comp_type="Constant", comp_subtype="Normal"
+    name="FINAL TIME", units="Month", comp_type="Constant", comp_subtype="Normal"
 )
 def final_time():
     """
@@ -55,7 +55,7 @@ def final_time():
 
 
 @component.add(
-    name="INITIAL TIME", units="Year", comp_type="Constant", comp_subtype="Normal"
+    name="INITIAL TIME", units="Month", comp_type="Constant", comp_subtype="Normal"
 )
 def initial_time():
     """
@@ -66,11 +66,10 @@ def initial_time():
 
 @component.add(
     name="SAVEPER",
-    units="Year",
+    units="Month",
     limits=(0.0, np.nan),
-    comp_type="Auxiliary",
+    comp_type="Constant",
     comp_subtype="Normal",
-    depends_on={"time_step": 1},
 )
 def saveper():
     """
@@ -81,7 +80,7 @@ def saveper():
 
 @component.add(
     name="TIME STEP",
-    units="Year",
+    units="Month",
     limits=(0.0, np.nan),
     comp_type="Constant",
     comp_subtype="Normal",
@@ -135,7 +134,7 @@ _integ_active = Integ(
     comp_subtype="Normal",
 )
 def birth_rate():
-    return 0.035
+    return 0.008 / 12
 
 
 @component.add(
@@ -148,14 +147,24 @@ def births():
     return birth_rate() * total_pop()
 
 
-@component.add(name="initial incident", comp_type="Constant", comp_subtype="Normal")
-def initial_incident():
-    return 139000
+@component.add(
+    name="CDR",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"time": 1, "multi_fact": 1},
+)
+def cdr():
+    return (0.46 + ramp(__data["time"], 0.0383, 2016, 2022)) * multi_fact()
 
 
-@component.add(name="CFR", comp_type="Constant", comp_subtype="Normal")
+@component.add(
+    name="CFR",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"time": 1, "time_fact": 1},
+)
 def cfr():
-    return 0.2
+    return (0.46 + ramp(__data["time"], -0.00119792, 84, 276)) * time_fact()
 
 
 @component.add(
@@ -232,6 +241,11 @@ _integ_susceptible = Integ(
 )
 
 
+@component.add(name="time fact", comp_type="Constant", comp_subtype="Normal")
+def time_fact():
+    return 1 / 60
+
+
 @component.add(
     name="total pop",
     comp_type="Auxiliary",
@@ -254,7 +268,7 @@ def total_pop():
     comp_subtype="Normal",
 )
 def general_mortality():
-    return 0.008
+    return 0.008 / 12
 
 
 @component.add(
@@ -268,9 +282,14 @@ def infection():
     return force_of_infection() * susceptible() * (active() / total_pop())
 
 
+@component.add(name="initial incident", comp_type="Constant", comp_subtype="Normal")
+def initial_incident():
+    return 139000
+
+
 @component.add(name="initial latent", comp_type="Constant", comp_subtype="Normal")
 def initial_latent():
-    return 1000000.0
+    return 100000
 
 
 @component.add(
@@ -297,11 +316,9 @@ _integ_latent_tb_infection = Integ(
 )
 
 
-@component.add(
-    name="CDR", comp_type="Auxiliary", comp_subtype="Normal", depends_on={"time": 1}
-)
-def cdr():
-    return 0.46 + ramp(__data["time"], 0.0383, 2016, 2022)
+@component.add(name="multi fact", comp_type="Constant", comp_subtype="Normal")
+def multi_fact():
+    return 1 / 6
 
 
 @component.add(
@@ -339,7 +356,7 @@ def detection():
 
 @component.add(name="relapse rate", comp_type="Constant", comp_subtype="Normal")
 def relapse_rate():
-    return 0.001
+    return 0.003
 
 
 @component.add(
@@ -354,7 +371,7 @@ def relapse():
 
 @component.add(name="force of infection", comp_type="Constant", comp_subtype="Normal")
 def force_of_infection():
-    return 0.3
+    return 0.2
 
 
 @component.add(
@@ -369,4 +386,4 @@ def progression():
 
 @component.add(name="progression rate", comp_type="Constant", comp_subtype="Normal")
 def progression_rate():
-    return 0.25
+    return 0.2

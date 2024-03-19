@@ -1,5 +1,5 @@
 """
-Python model 'V4.py'
+Python model 'V5_months.py'
 Translated using PySD
 """
 
@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from pysd.py_backend.functions import ramp
-from pysd.py_backend.statefuls import Integ
+from pysd.py_backend.statefuls import Integ, Delay
 from pysd import Component
 
 __pysd_version__ = "3.7.1"
@@ -24,10 +24,10 @@ component = Component()
 #######################################################################
 
 _control_vars = {
-    "initial_time": lambda: 2000,
-    "final_time": lambda: 2023,
+    "initial_time": lambda: 0,
+    "final_time": lambda: 276,
     "time_step": lambda: 1,
-    "saveper": lambda: time_step(),
+    "saveper": lambda: 12,
 }
 
 
@@ -45,7 +45,7 @@ def time():
 
 
 @component.add(
-    name="FINAL TIME", units="Year", comp_type="Constant", comp_subtype="Normal"
+    name="FINAL TIME", units="Month", comp_type="Constant", comp_subtype="Normal"
 )
 def final_time():
     """
@@ -55,7 +55,7 @@ def final_time():
 
 
 @component.add(
-    name="INITIAL TIME", units="Year", comp_type="Constant", comp_subtype="Normal"
+    name="INITIAL TIME", units="Month", comp_type="Constant", comp_subtype="Normal"
 )
 def initial_time():
     """
@@ -66,11 +66,10 @@ def initial_time():
 
 @component.add(
     name="SAVEPER",
-    units="Year",
+    units="Month",
     limits=(0.0, np.nan),
-    comp_type="Auxiliary",
+    comp_type="Constant",
     comp_subtype="Normal",
-    depends_on={"time_step": 1},
 )
 def saveper():
     """
@@ -81,7 +80,7 @@ def saveper():
 
 @component.add(
     name="TIME STEP",
-    units="Year",
+    units="Month",
     limits=(0.0, np.nan),
     comp_type="Constant",
     comp_subtype="Normal",
@@ -96,6 +95,82 @@ def time_step():
 #######################################################################
 #                           MODEL VARIABLES                           #
 #######################################################################
+
+
+@component.add(
+    name="Detection",
+    units="People/Month",
+    comp_type="Stateful",
+    comp_subtype="Delay",
+    depends_on={"_delay_detection": 1, "cdr": 1},
+    other_deps={
+        "_delay_detection": {
+            "initial": {"active": 1, "diagnostic_delay": 1},
+            "step": {"active": 1, "diagnostic_delay": 1},
+        }
+    },
+)
+def detection():
+    return _delay_detection() * cdr()
+
+
+_delay_detection = Delay(
+    lambda: active(),
+    lambda: diagnostic_delay(),
+    lambda: active(),
+    lambda: 1,
+    time_step,
+    "_delay_detection",
+)
+
+
+@component.add(
+    name="progression",
+    units="People/Month",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"latent_tb_infection": 1, "progression_rate": 1},
+)
+def progression():
+    return latent_tb_infection() * progression_rate()
+
+
+@component.add(
+    name="CDR",
+    units="1/Month",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"time": 1},
+)
+def cdr():
+    return (0.46 + ramp(__data["time"], 0.0383 / 12, 16 * 12, 22 * 12)) / 12
+
+
+@component.add(name="CFR", units="1/Month", comp_type="Constant", comp_subtype="Normal")
+def cfr():
+    return 0.089 / 12
+
+
+@component.add(
+    name="deaths TB",
+    units="People/Month",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"active": 1, "cfr": 1},
+)
+def deaths_tb():
+    return active() * cfr()
+
+
+@component.add(
+    name="Relapse",
+    units="People/Month",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"detected_and_treated_tb": 1, "relapse_rate": 1},
+)
+def relapse():
+    return detected_and_treated_tb() * relapse_rate()
 
 
 @component.add(
@@ -130,16 +205,18 @@ _integ_active = Integ(
 
 @component.add(
     name="birth rate",
+    units="1/Month",
     limits=(0.0, 0.1, 0.0001),
     comp_type="Constant",
     comp_subtype="Normal",
 )
 def birth_rate():
-    return 0.035
+    return 0.03 / 12
 
 
 @component.add(
     name="births",
+    units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
     depends_on={"birth_rate": 1, "total_pop": 1},
@@ -148,18 +225,9 @@ def births():
     return birth_rate() * total_pop()
 
 
-@component.add(name="initial incident", comp_type="Constant", comp_subtype="Normal")
-def initial_incident():
-    return 139000
-
-
-@component.add(name="CFR", comp_type="Constant", comp_subtype="Normal")
-def cfr():
-    return 0.2
-
-
 @component.add(
     name="deaths A",
+    units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
     depends_on={"active": 1, "general_mortality": 1},
@@ -170,6 +238,7 @@ def deaths_a():
 
 @component.add(
     name="deaths L",
+    units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
     depends_on={"latent_tb_infection": 1, "general_mortality": 1},
@@ -180,6 +249,7 @@ def deaths_l():
 
 @component.add(
     name="deaths S",
+    units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
     depends_on={"susceptible": 1, "general_mortality": 1},
@@ -190,22 +260,13 @@ def deaths_s():
 
 @component.add(
     name="deaths T",
+    units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
     depends_on={"detected_and_treated_tb": 1, "general_mortality": 1},
 )
 def deaths_t():
     return detected_and_treated_tb() * general_mortality()
-
-
-@component.add(
-    name="deaths TB",
-    comp_type="Auxiliary",
-    comp_subtype="Normal",
-    depends_on={"active": 1, "cfr": 1},
-)
-def deaths_tb():
-    return active() * cfr()
 
 
 @component.add(
@@ -234,6 +295,7 @@ _integ_susceptible = Integ(
 
 @component.add(
     name="total pop",
+    units="People",
     comp_type="Auxiliary",
     comp_subtype="Normal",
     depends_on={
@@ -249,17 +311,18 @@ def total_pop():
 
 @component.add(
     name="general mortality",
+    units="1/Month",
     limits=(0.0, 1.0, 0.0001),
     comp_type="Constant",
     comp_subtype="Normal",
 )
 def general_mortality():
-    return 0.008
+    return 0.008 / 12
 
 
 @component.add(
     name="infection",
-    units="People/Year",
+    units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
     depends_on={"force_of_infection": 1, "susceptible": 1, "total_pop": 1, "active": 1},
@@ -268,7 +331,24 @@ def infection():
     return force_of_infection() * susceptible() * (active() / total_pop())
 
 
-@component.add(name="initial latent", comp_type="Constant", comp_subtype="Normal")
+@component.add(
+    name="initial incident",
+    units="People",
+    limits=(0.0, 2000000.0, 50000.0),
+    comp_type="Constant",
+    comp_subtype="Normal",
+)
+def initial_incident():
+    return 400000
+
+
+@component.add(
+    name="initial latent",
+    units="People",
+    limits=(0.0, 2000000.0),
+    comp_type="Constant",
+    comp_subtype="Normal",
+)
 def initial_latent():
     return 1000000.0
 
@@ -298,14 +378,19 @@ _integ_latent_tb_infection = Integ(
 
 
 @component.add(
-    name="CDR", comp_type="Auxiliary", comp_subtype="Normal", depends_on={"time": 1}
+    name="diagnostic delay",
+    units="Month",
+    limits=(0.0, 20.0),
+    comp_type="Constant",
+    comp_subtype="Normal",
 )
-def cdr():
-    return 0.46 + ramp(__data["time"], 0.0383, 2016, 2022)
+def diagnostic_delay():
+    return 1.5
 
 
 @component.add(
     name="Detected and Treated TB",
+    units="People",
     comp_type="Stateful",
     comp_subtype="Integ",
     depends_on={"_integ_detected_and_treated_tb": 1},
@@ -328,45 +413,32 @@ _integ_detected_and_treated_tb = Integ(
 
 
 @component.add(
-    name="Detection",
-    comp_type="Auxiliary",
+    name="relapse rate",
+    units="1/Month",
+    limits=(0.0, 0.1),
+    comp_type="Constant",
     comp_subtype="Normal",
-    depends_on={"active": 1, "cdr": 1},
 )
-def detection():
-    return active() * cdr()
-
-
-@component.add(name="relapse rate", comp_type="Constant", comp_subtype="Normal")
 def relapse_rate():
-    return 0.001
+    return 0.008 / 12
 
 
 @component.add(
-    name="Relapse",
-    comp_type="Auxiliary",
+    name="force of infection",
+    units="1/Month",
+    comp_type="Constant",
     comp_subtype="Normal",
-    depends_on={"detected_and_treated_tb": 1, "relapse_rate": 1},
 )
-def relapse():
-    return detected_and_treated_tb() * relapse_rate()
-
-
-@component.add(name="force of infection", comp_type="Constant", comp_subtype="Normal")
 def force_of_infection():
-    return 0.3
+    return 0.15
 
 
 @component.add(
-    name="progression",
-    comp_type="Auxiliary",
+    name="progression rate",
+    units="1/Month",
+    limits=(0.0, 0.1, 0.001),
+    comp_type="Constant",
     comp_subtype="Normal",
-    depends_on={"latent_tb_infection": 1, "progression_rate": 1},
 )
-def progression():
-    return latent_tb_infection() * progression_rate()
-
-
-@component.add(name="progression rate", comp_type="Constant", comp_subtype="Normal")
 def progression_rate():
-    return 0.25
+    return 0.1
