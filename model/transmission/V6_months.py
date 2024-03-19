@@ -1,5 +1,5 @@
 """
-Python model 'V5_months.py'
+Python model 'V6_months.py'
 Translated using PySD
 """
 
@@ -98,30 +98,76 @@ def time_step():
 
 
 @component.add(
-    name="Detection",
-    units="People/Month",
+    name="Active",
+    units="People",
     comp_type="Stateful",
-    comp_subtype="Delay",
-    depends_on={"_delay_detection": 1, "cdr": 1},
+    comp_subtype="Integ",
+    depends_on={"_integ_active": 1},
     other_deps={
-        "_delay_detection": {
-            "initial": {"active": 1, "multi_fact": 1},
-            "step": {"active": 1, "multi_fact": 1},
+        "_integ_active": {
+            "initial": {"initial_incident": 1},
+            "step": {
+                "progression": 1,
+                "relapse": 1,
+                "treatment_failure": 1,
+                "deaths_a": 1,
+                "deaths_tb": 1,
+                "detection": 1,
+            },
         }
     },
 )
-def detection():
-    return _delay_detection() * cdr()
+def active():
+    return _integ_active()
 
 
-_delay_detection = Delay(
-    lambda: active(),
-    lambda: multi_fact(),
-    lambda: active(),
-    lambda: 1,
-    time_step,
-    "_delay_detection",
+_integ_active = Integ(
+    lambda: progression()
+    + relapse()
+    + treatment_failure()
+    - deaths_a()
+    - deaths_tb()
+    - detection(),
+    lambda: initial_incident(),
+    "_integ_active",
 )
+
+
+@component.add(
+    name="deaths T",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"general_mortality": 1, "treated_successfully": 1},
+)
+def deaths_t():
+    return general_mortality() * treated_successfully()
+
+
+@component.add(
+    name="deaths TB",
+    units="People/Month",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"active": 1, "cfr": 1},
+)
+def deaths_tb():
+    return active() * cfr()
+
+
+@component.add(
+    name="CDR",
+    units="1/Month",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"time": 1},
+)
+def cdr():
+    return (0.46 + ramp(__data["time"], 0.0383 / 12, 16 * 12, 22 * 12)) / 12
+
+
+@component.add(name="CFR", units="1/Month", comp_type="Constant", comp_subtype="Normal")
+def cfr():
+    return 0.089 / 12
 
 
 @component.add(
@@ -152,41 +198,13 @@ _delay_progression = Delay(
 
 
 @component.add(
-    name="Relapse",
-    units="People/Month",
+    name="Treatment Failure",
     comp_type="Auxiliary",
     comp_subtype="Normal",
-    depends_on={"detected_and_treated_tb": 1, "relapse_rate": 1},
+    depends_on={"detected_and_initiated_on_treatment": 1, "treatment_success": 1},
 )
-def relapse():
-    return detected_and_treated_tb() * relapse_rate()
-
-
-@component.add(
-    name="CDR",
-    units="1/Month",
-    comp_type="Auxiliary",
-    comp_subtype="Normal",
-    depends_on={"time": 1},
-)
-def cdr():
-    return (0.46 + ramp(__data["time"], 0.0383 / 12, 16 * 12, 22 * 12)) / 12
-
-
-@component.add(name="CFR", units="1/Month", comp_type="Constant", comp_subtype="Normal")
-def cfr():
-    return 0.089 / 12
-
-
-@component.add(
-    name="deaths TB",
-    units="People/Month",
-    comp_type="Auxiliary",
-    comp_subtype="Normal",
-    depends_on={"active": 1, "cfr": 1},
-)
-def deaths_tb():
-    return active() * cfr()
+def treatment_failure():
+    return detected_and_initiated_on_treatment() * (1 - treatment_success())
 
 
 @component.add(
@@ -197,33 +215,113 @@ def progression_time():
 
 
 @component.add(
-    name="Active",
+    name="Relapse",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"relapse_rate": 1, "treated_successfully": 1},
+)
+def relapse():
+    return relapse_rate() * treated_successfully()
+
+
+@component.add(
+    name="Detection",
+    units="People/Month",
+    comp_type="Stateful",
+    comp_subtype="Delay",
+    depends_on={"_delay_detection": 1, "cdr": 1},
+    other_deps={
+        "_delay_detection": {
+            "initial": {"active": 1, "multi_fact": 1},
+            "step": {"active": 1, "multi_fact": 1},
+        }
+    },
+)
+def detection():
+    return _delay_detection() * cdr()
+
+
+_delay_detection = Delay(
+    lambda: active(),
+    lambda: multi_fact(),
+    lambda: active(),
+    lambda: 1,
+    time_step,
+    "_delay_detection",
+)
+
+
+@component.add(
+    name="Detected and Initiated on Treatment",
     units="People",
     comp_type="Stateful",
     comp_subtype="Integ",
-    depends_on={"_integ_active": 1},
+    depends_on={"_integ_detected_and_initiated_on_treatment": 1},
     other_deps={
-        "_integ_active": {
-            "initial": {"initial_incident": 1},
+        "_integ_detected_and_initiated_on_treatment": {
+            "initial": {},
             "step": {
-                "progression": 1,
-                "relapse": 1,
-                "deaths_a": 1,
-                "deaths_tb": 1,
                 "detection": 1,
+                "deaths_dt": 1,
+                "treatment": 1,
+                "treatment_failure": 1,
             },
         }
     },
 )
-def active():
-    return _integ_active()
+def detected_and_initiated_on_treatment():
+    return _integ_detected_and_initiated_on_treatment()
 
 
-_integ_active = Integ(
-    lambda: progression() + relapse() - deaths_a() - deaths_tb() - detection(),
-    lambda: initial_incident(),
-    "_integ_active",
+_integ_detected_and_initiated_on_treatment = Integ(
+    lambda: detection() - deaths_dt() - treatment() - treatment_failure(),
+    lambda: 55000,
+    "_integ_detected_and_initiated_on_treatment",
 )
+
+
+@component.add(
+    name="Treated Successfully",
+    comp_type="Stateful",
+    comp_subtype="Integ",
+    depends_on={"_integ_treated_successfully": 1},
+    other_deps={
+        "_integ_treated_successfully": {
+            "initial": {},
+            "step": {"treatment": 1, "deaths_t": 1, "relapse": 1},
+        }
+    },
+)
+def treated_successfully():
+    return _integ_treated_successfully()
+
+
+_integ_treated_successfully = Integ(
+    lambda: treatment() - deaths_t() - relapse(),
+    lambda: 0,
+    "_integ_treated_successfully",
+)
+
+
+@component.add(
+    name="treatment",
+    units="People/Month",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"detected_and_initiated_on_treatment": 1, "treatment_success": 1},
+)
+def treatment():
+    return detected_and_initiated_on_treatment() * treatment_success()
+
+
+@component.add(
+    name="treatment success",
+    units="1/Month",
+    comp_type="Constant",
+    comp_subtype="Normal",
+)
+def treatment_success():
+    return 0.7
 
 
 @component.add(
@@ -282,14 +380,14 @@ def deaths_s():
 
 
 @component.add(
-    name="deaths T",
+    name="deaths DT",
     units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
-    depends_on={"detected_and_treated_tb": 1, "general_mortality": 1},
+    depends_on={"detected_and_initiated_on_treatment": 1, "general_mortality": 1},
 )
-def deaths_t():
-    return detected_and_treated_tb() * general_mortality()
+def deaths_dt():
+    return detected_and_initiated_on_treatment() * general_mortality()
 
 
 @component.add(
@@ -323,13 +421,18 @@ _integ_susceptible = Integ(
     comp_subtype="Normal",
     depends_on={
         "active": 1,
-        "detected_and_treated_tb": 1,
+        "detected_and_initiated_on_treatment": 1,
         "latent_tb_infection": 1,
         "susceptible": 1,
     },
 )
 def total_pop():
-    return active() + detected_and_treated_tb() + latent_tb_infection() + susceptible()
+    return (
+        active()
+        + detected_and_initiated_on_treatment()
+        + latent_tb_infection()
+        + susceptible()
+    )
 
 
 @component.add(
@@ -362,7 +465,7 @@ def infection():
     comp_subtype="Normal",
 )
 def initial_incident():
-    return 300000
+    return 200000
 
 
 @component.add(
@@ -409,30 +512,6 @@ _integ_latent_tb_infection = Integ(
 )
 def multi_fact():
     return 6
-
-
-@component.add(
-    name="Detected and Treated TB",
-    units="People",
-    comp_type="Stateful",
-    comp_subtype="Integ",
-    depends_on={"_integ_detected_and_treated_tb": 1},
-    other_deps={
-        "_integ_detected_and_treated_tb": {
-            "initial": {},
-            "step": {"detection": 1, "deaths_t": 1, "relapse": 1},
-        }
-    },
-)
-def detected_and_treated_tb():
-    return _integ_detected_and_treated_tb()
-
-
-_integ_detected_and_treated_tb = Integ(
-    lambda: detection() - deaths_t() - relapse(),
-    lambda: 55000,
-    "_integ_detected_and_treated_tb",
-)
 
 
 @component.add(

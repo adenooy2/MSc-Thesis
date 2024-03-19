@@ -77,6 +77,7 @@ Notably there are many columns in the dataframe listed as numeric, but only have
 
 ### Missing Data
 
+The code below highlights only a few columns with missing data. These columns all relate to the result of a TB test ( screen_result, tb_triage_result, conf_sample_result, patient_conf_result_received). In the design of the baseline model, these missing values are not as a result of data being incorrcetly recorded or collected, but rather represent a status themselves - that is, no result was availble at that point in the patient pathway
 ```{r}
 # count the missing values by column wise
 print("Count of missing values by column wise")
@@ -108,13 +109,29 @@ print(paste("Total TB Negative: ", hiv_tb_counts$hiv_neg[hiv_tb_counts$tb_status
 
 
 ### TB patient pathway summary
-Given the format of the model, it is useful to summarise the number of individuals reaching key points in the patient pathway. An initial analysis is conducted only for those people with TB. Based on descriptions of the model, key variables representing some some of these points are:
+Given the format of the model, it is useful to summarise the number of individuals reaching key points in the patient pathway. An initial analysis is conducted only for those people with TB. Based on descriptions of the model, key variables representing some some of these points are: tb_present, tb_seek_care,tb_confirmatory_offered,conf_sample_provided,patient_conf_result_received. Summarising these variables will provide an indiciatio of how many individuals with TB reach each point in the pathway and are diagnoses corrcetly.
 
 
 ```{r}
 #Filter to only those with TB
-b_data_tb=b_data %>% filter(tb_present==1)
+b_data_tb_path=b_data %>% filter(tb_present==1) %>% select(tb_present, tb_seek_care,tb_confirmatory_offered,conf_sample_provided,
+                                                           ,patient_conf_result_received)
 
+#Count pathway points
+tb_path_counts=data.frame(colSums(b_data_tb_path,na.rm=TRUE))
+colnames(tb_path_counts)[1]="count"
+tb_path_counts$variable=rownames(tb_path_counts)
+
+#Determine percentages
+tb_path_counts$perc=round(tb_path_counts$count/max(tb_path_counts$count)*100,1)
+
+#Plot tB cascade
+
+ggplot(tb_path_counts,aes(x=reorder(variable,-count),y=count))+
+  geom_bar(stat="identity")+theme_bw()+xlab("Pathway Point")+ylab("Number of individuals")+
+  labs(title="Percentage of individuals with TB reaching \n differents points in the patient diagnostic journey")+
+  geom_text(aes(x=reorder(variable,-count),y=count+25,label=paste(perc,"%",sep="")))+
+   scale_x_discrete(guide = guide_axis(n.dodge=2))
 ```
 
 
