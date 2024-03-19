@@ -15,7 +15,7 @@ Name: Alexandra de Nooy \
 Student ID: 14581728\
 Email: alexandra.de.nooy@student.uva.nl or denooy.alex@gmail.com\
 Submitted on: 22/03/2023\
-Github link: 
+Github link: https://github.com/adenooy2/MSc-Thesis.git
 
 # Data Context
 This exploratory data analysis is conducted usinf R and RStudio. There are two main sets of data to be considered, linked to the two main sections of the project.
@@ -137,6 +137,7 @@ ggplot(tb_path_counts,aes(x=reorder(variable,-count),y=count))+
 
 # Data Description: WHO Tuberculosis Data
 
+This dataset represent thw WHO TB estimates for Kenya. 
 
 
 ## Load and merge WHO TB burden data and data dictionary
@@ -164,9 +165,39 @@ tbData=tb_estimates %>% gather("variable_name","value",7:50) %>% left_join(datad
 tbData=subset(tbData, select = -c(iso2,iso3,iso_numeric,g_whoregion,code_list) )
 print(tbData[1:5,])
 
+```
+### Structure of combined dataset and data dictionary
 
+```{r}
+
+print(paste("The dataframe consists of ",dim(tbData)[1]," rows and ",dim(tbData)[2]," columns",sep=""))
+
+#List of column names
+colnames(tbData)
+
+print(tbData[1:3,])
+
+#Type of each column
+sapply(tbData, class)
 
 ```
+### Exploring WHO variables 
+Within the dataset there are multiple indicators listed under the column variable_name, each representing a certain measurement or quantity related to TB. Not all of these will be relevant to the model calibration but it is important to see what is available to determine those which are the most useful. 
+
+Notably, indicator values are presented yearly over an approximate two decade period between 2000-2022
+
+```{r}
+#List individual indicators
+tbData_vars=tbData$variable_name %>% unique()
+print(tbData_vars)
+
+print(paste("Within the dataset there are ", length(tbData_vars)," indicators. Most indicators are grouped into categories of three with a mean, lower and upper bound",sep=""))
+
+#Time period
+tbData_time=tbData$year  %>% unique()
+print(list(tbData_time))
+```
+
 
 ## Exploring new incident infections (all infections and HIV)
 

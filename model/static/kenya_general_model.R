@@ -11,7 +11,7 @@ options(scipen=999)
 
 #Run Options
 n=10000
-runs=5
+runs=20
 basePath="/Users/adenooy/Library/CloudStorage/OneDrive-Personal/UVA/Thesis/MSc-Thesis/"
 
 #Parameters
