@@ -1,5 +1,5 @@
 """
-Python model 'V5_months.py'
+Python model 'V7_months.py'
 Translated using PySD
 """
 
@@ -98,6 +98,114 @@ def time_step():
 
 
 @component.add(
+    name="Active",
+    units="People",
+    comp_type="Stateful",
+    comp_subtype="Integ",
+    depends_on={"_integ_active": 1},
+    other_deps={
+        "_integ_active": {
+            "initial": {"initial_incident": 1},
+            "step": {
+                "fast_progression": 1,
+                "relapse": 1,
+                "slow_progression": 1,
+                "deaths_a": 1,
+                "deaths_tb": 1,
+                "detection": 1,
+            },
+        }
+    },
+)
+def active():
+    return _integ_active()
+
+
+_integ_active = Integ(
+    lambda: fast_progression()
+    + relapse()
+    + slow_progression()
+    - deaths_a()
+    - deaths_tb()
+    - detection(),
+    lambda: initial_incident(),
+    "_integ_active",
+)
+
+
+@component.add(name="fast prop", comp_type="Constant", comp_subtype="Normal")
+def fast_prop():
+    return 0.1
+
+
+@component.add(
+    name="slow progression rate", comp_type="Constant", comp_subtype="Normal"
+)
+def slow_progression_rate():
+    return 0.09
+
+
+@component.add(
+    name="fast progression",
+    units="People/Month",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"latent_tb_infection": 1, "fast_prop": 1, "fast_progression_rate": 1},
+)
+def fast_progression():
+    return latent_tb_infection() * fast_prop() * fast_progression_rate()
+
+
+@component.add(
+    name="slow progression",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"latent_tb_infection": 1, "fast_prop": 1, "slow_progression_rate": 1},
+)
+def slow_progression():
+    return latent_tb_infection() * (1 - fast_prop()) * slow_progression_rate()
+
+
+@component.add(
+    name="progression",
+    comp_type="Auxiliary",
+    comp_subtype="Normal",
+    depends_on={"fast_progression": 1, "slow_progression": 1},
+)
+def progression():
+    return fast_progression() + slow_progression()
+
+
+@component.add(
+    name="Latent TB infection",
+    units="People",
+    comp_type="Stateful",
+    comp_subtype="Integ",
+    depends_on={"_integ_latent_tb_infection": 1},
+    other_deps={
+        "_integ_latent_tb_infection": {
+            "initial": {"initial_latent": 1},
+            "step": {
+                "infection": 1,
+                "deaths_l": 1,
+                "fast_progression": 1,
+                "slow_progression": 1,
+            },
+        }
+    },
+)
+def latent_tb_infection():
+    return _integ_latent_tb_infection()
+
+
+_integ_latent_tb_infection = Integ(
+    lambda: infection() - deaths_l() - fast_progression() - slow_progression(),
+    lambda: initial_latent(),
+    "_integ_latent_tb_infection",
+)
+
+
+@component.add(
     name="Detection",
     units="People/Month",
     comp_type="Stateful",
@@ -105,8 +213,8 @@ def time_step():
     depends_on={"_delay_detection": 1, "cdr": 1},
     other_deps={
         "_delay_detection": {
-            "initial": {"active": 1, "multi_fact": 1},
-            "step": {"active": 1, "multi_fact": 1},
+            "initial": {"active": 1, "diagnosis_delay": 1},
+            "step": {"active": 1, "diagnosis_delay": 1},
         }
     },
 )
@@ -116,38 +224,11 @@ def detection():
 
 _delay_detection = Delay(
     lambda: active(),
-    lambda: multi_fact(),
+    lambda: diagnosis_delay(),
     lambda: active(),
     lambda: 1,
     time_step,
     "_delay_detection",
-)
-
-
-@component.add(
-    name="progression",
-    units="People/Month",
-    comp_type="Stateful",
-    comp_subtype="Delay",
-    depends_on={"_delay_progression": 1, "progression_rate": 1},
-    other_deps={
-        "_delay_progression": {
-            "initial": {"latent_tb_infection": 1, "progression_time": 1},
-            "step": {"latent_tb_infection": 1, "progression_time": 1},
-        }
-    },
-)
-def progression():
-    return _delay_progression() * progression_rate()
-
-
-_delay_progression = Delay(
-    lambda: latent_tb_infection(),
-    lambda: progression_time(),
-    lambda: latent_tb_infection(),
-    lambda: 1,
-    time_step,
-    "_delay_progression",
 )
 
 
@@ -187,43 +268,6 @@ def cfr():
 )
 def deaths_tb():
     return active() * cfr()
-
-
-@component.add(
-    name="progression time", units="Month", comp_type="Constant", comp_subtype="Normal"
-)
-def progression_time():
-    return 6
-
-
-@component.add(
-    name="Active",
-    units="People",
-    comp_type="Stateful",
-    comp_subtype="Integ",
-    depends_on={"_integ_active": 1},
-    other_deps={
-        "_integ_active": {
-            "initial": {"initial_incident": 1},
-            "step": {
-                "progression": 1,
-                "relapse": 1,
-                "deaths_a": 1,
-                "deaths_tb": 1,
-                "detection": 1,
-            },
-        }
-    },
-)
-def active():
-    return _integ_active()
-
-
-_integ_active = Integ(
-    lambda: progression() + relapse() - deaths_a() - deaths_tb() - detection(),
-    lambda: initial_incident(),
-    "_integ_active",
-)
 
 
 @component.add(
@@ -340,7 +384,7 @@ def total_pop():
     comp_subtype="Normal",
 )
 def general_mortality():
-    return 0.008 / 12
+    return 0.0075 / 12
 
 
 @component.add(
@@ -348,7 +392,7 @@ def general_mortality():
     units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
-    depends_on={"force_of_infection": 1, "susceptible": 1, "total_pop": 1, "active": 1},
+    depends_on={"force_of_infection": 1, "susceptible": 1, "active": 1, "total_pop": 1},
 )
 def infection():
     return force_of_infection() * susceptible() * (active() / total_pop())
@@ -377,37 +421,13 @@ def initial_latent():
 
 
 @component.add(
-    name="Latent TB infection",
-    units="People",
-    comp_type="Stateful",
-    comp_subtype="Integ",
-    depends_on={"_integ_latent_tb_infection": 1},
-    other_deps={
-        "_integ_latent_tb_infection": {
-            "initial": {"initial_latent": 1},
-            "step": {"infection": 1, "deaths_l": 1, "progression": 1},
-        }
-    },
-)
-def latent_tb_infection():
-    return _integ_latent_tb_infection()
-
-
-_integ_latent_tb_infection = Integ(
-    lambda: infection() - deaths_l() - progression(),
-    lambda: initial_latent(),
-    "_integ_latent_tb_infection",
-)
-
-
-@component.add(
-    name="multi fact",
+    name="diagnosis delay",
     units="Month",
     limits=(0.0, 20.0),
     comp_type="Constant",
     comp_subtype="Normal",
 )
-def multi_fact():
+def diagnosis_delay():
     return 6
 
 
@@ -457,11 +477,11 @@ def force_of_infection():
 
 
 @component.add(
-    name="progression rate",
+    name="fast progression rate",
     units="1/Month",
     limits=(0.0, 0.1, 0.001),
     comp_type="Constant",
     comp_subtype="Normal",
 )
-def progression_rate():
-    return 0.1
+def fast_progression_rate():
+    return 0.01

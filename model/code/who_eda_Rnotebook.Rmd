@@ -20,9 +20,9 @@ Github link: https://github.com/adenooy2/MSc-Thesis.git
 # Data Context
 This exploratory data analysis is conducted usinf R and RStudio. There are two main sets of data to be considered, linked to the two main sections of the project.
 
-The first set of data represents the baseline or standard of care output runs produced by the existing patient pathway model. For the baseline there are 15 data output files (in csv format). Multiple files had been generated to account for model stochasticity, with the results of each simulation being based on a different set of random probabilities. The data files have a consistent structure and represent the population of indiviudals who move through the TB diagnostic patient pathway. In this, each column represents either a patient disease status or a point in the patient pathway that the indiviudal may or may not have reached.
+The first set of data represents the baseline or standard of care output  produced by the existing patient pathway model. For the baseline there are 20 data output files (in csv format). Multiple files had been generated to account for model stochasticity, with the results of each simulation being based on a different set of random probabilities. The data files have a consistent structure and represent the population of indiviudals who move through the TB diagnostic patient pathway. In this, each column represents either a patient disease status or a point in the patient pathway that the indiviudal may or may not have reached.
 
-The second data set consists of TB burden estimates for Kenya produced by the World Heath Organization as well as the accompanying data dictionary. The estimates cover a range of data variables and their estimated values between the years 2000 and 2022. Several key variables include estimates on TB incidence (new cases), notifications (diagnoses) and deaths. Estimates are also provided for different groups of individuals (for example HIV postive patients) and for different tpes of TB.
+The second data set consists of TB burden estimates for Kenya produced by the World Heath Organization (WHO) as well as the accompanying data dictionary. The estimates cover a range of data variables and their estimated values between the years 2000 and 2022. Several key variables include estimates on TB incidence (new cases), notifications (diagnoses) and deaths. Estimates are also provided for different groups of individuals (for example HIV postive patients) and for different tpes of TB.
 
 
 ```{r, echo=FALSE,message=FALSE}
@@ -122,11 +122,10 @@ tb_path_counts=data.frame(colSums(b_data_tb_path,na.rm=TRUE))
 colnames(tb_path_counts)[1]="count"
 tb_path_counts$variable=rownames(tb_path_counts)
 
-#Determine percentages
+#Calculate percentages
 tb_path_counts$perc=round(tb_path_counts$count/max(tb_path_counts$count)*100,1)
 
 #Plot tB cascade
-
 ggplot(tb_path_counts,aes(x=reorder(variable,-count),y=count))+
   geom_bar(stat="identity")+theme_bw()+xlab("Pathway Point")+ylab("Number of individuals")+
   labs(title="Percentage of individuals with TB reaching \n differents points in the patient diagnostic journey")+
@@ -137,7 +136,7 @@ ggplot(tb_path_counts,aes(x=reorder(variable,-count),y=count))+
 
 # Data Description: WHO Tuberculosis Data
 
-This dataset represent thw WHO TB estimates for Kenya. 
+This dataset represent the WHO TB estimates for Kenya. 
 
 
 ## Load and merge WHO TB burden data and data dictionary
@@ -181,6 +180,15 @@ print(tbData[1:3,])
 sapply(tbData, class)
 
 ```
+##Missing Data
+
+From the code below it is seen that there are no missing data elements in the WHO TB data and every indicator has a value for the year 2000 to 2022.
+```{r}
+# count the missing values by column wise
+print("Count of missing values by column wise")
+sapply(tb_estimates, function(x) sum(is.na(x)))
+```
+
 ### Exploring WHO variables 
 Within the dataset there are multiple indicators listed under the column variable_name, each representing a certain measurement or quantity related to TB. Not all of these will be relevant to the model calibration but it is important to see what is available to determine those which are the most useful. 
 
@@ -247,7 +255,7 @@ key_fact=tbData %>% filter(variable_name %in% c("e_pop_num","e_inc_num","e_inc_r
   select(variable_name,year,value) %>% spread(variable_name,value)
 
 
-#Conduct additional caluclations fo rates or use rates to estimate numbers
+#Conduct additional caluclations for rates or use rates to estimate numbers
 key_fact$calc_cfr_inc=100*(key_fact$e_mort_num/key_fact$e_inc_num)
 key_fact$calc_case_detect=key_fact$c_cdr/100*key_fact$e_inc_num
 key_fact$calc_cfr_case=100*(key_fact$e_mort_num/key_fact$calc_case_detect)

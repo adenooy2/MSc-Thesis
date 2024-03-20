@@ -1,5 +1,5 @@
 """
-Python model 'V5_months.py'
+Python model 'V5_months_calibrated.py'
 Translated using PySD
 """
 
@@ -105,8 +105,8 @@ def time_step():
     depends_on={"_delay_detection": 1, "cdr": 1},
     other_deps={
         "_delay_detection": {
-            "initial": {"active": 1, "multi_fact": 1},
-            "step": {"active": 1, "multi_fact": 1},
+            "initial": {"active": 1, "diagnosis_delay": 1},
+            "step": {"active": 1, "diagnosis_delay": 1},
         }
     },
 )
@@ -116,7 +116,7 @@ def detection():
 
 _delay_detection = Delay(
     lambda: active(),
-    lambda: multi_fact(),
+    lambda: diagnosis_delay(),
     lambda: active(),
     lambda: 1,
     time_step,
@@ -186,7 +186,7 @@ def cfr():
     depends_on={"active": 1, "cfr": 1},
 )
 def deaths_tb():
-    return active() * cfr()
+    return active() * (cfr() / 12)
 
 
 @component.add(
@@ -234,7 +234,7 @@ _integ_active = Integ(
     comp_subtype="Normal",
 )
 def birth_rate():
-    return 0.03 / 12
+    return 0.027 / 12
 
 
 @component.add(
@@ -340,7 +340,7 @@ def total_pop():
     comp_subtype="Normal",
 )
 def general_mortality():
-    return 0.008 / 12
+    return 0.0075 / 12
 
 
 @component.add(
@@ -362,7 +362,7 @@ def infection():
     comp_subtype="Normal",
 )
 def initial_incident():
-    return 300000
+    return 3000000.0
 
 
 @component.add(
@@ -373,7 +373,7 @@ def initial_incident():
     comp_subtype="Normal",
 )
 def initial_latent():
-    return 1000000.0
+    return 497.3
 
 
 @component.add(
@@ -401,13 +401,13 @@ _integ_latent_tb_infection = Integ(
 
 
 @component.add(
-    name="multi fact",
+    name="diagnosis delay",
     units="Month",
     limits=(0.0, 20.0),
     comp_type="Constant",
     comp_subtype="Normal",
 )
-def multi_fact():
+def diagnosis_delay():
     return 6
 
 
@@ -443,7 +443,7 @@ _integ_detected_and_treated_tb = Integ(
     comp_subtype="Normal",
 )
 def relapse_rate():
-    return 0.003
+    return 0.0079857
 
 
 @component.add(
@@ -453,15 +453,15 @@ def relapse_rate():
     comp_subtype="Normal",
 )
 def force_of_infection():
-    return 0.15
+    return 0.072
 
 
 @component.add(
     name="progression rate",
     units="1/Month",
-    limits=(0.0, 0.1, 0.001),
+    limits=(0.0, 0.2, 0.001),
     comp_type="Constant",
     comp_subtype="Normal",
 )
 def progression_rate():
-    return 0.1
+    return 0.04973
