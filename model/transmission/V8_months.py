@@ -348,10 +348,10 @@ def general_mortality():
     units="People/Month",
     comp_type="Auxiliary",
     comp_subtype="Normal",
-    depends_on={"force_of_infection": 1, "susceptible": 1, "total_pop": 1, "active": 1},
+    depends_on={"transmission_rate": 1, "susceptible": 1, "total_pop": 1, "active": 1},
 )
 def infection():
-    return force_of_infection() * susceptible() * (active() / total_pop())
+    return transmission_rate() * susceptible() * (active() / total_pop())
 
 
 @component.add(
@@ -362,7 +362,7 @@ def infection():
     comp_subtype="Normal",
 )
 def initial_incident():
-    return 3000000.0
+    return 2100000.0
 
 
 @component.add(
@@ -373,7 +373,7 @@ def initial_incident():
     comp_subtype="Normal",
 )
 def initial_latent():
-    return 1000000.0
+    return 184000
 
 
 @component.add(
@@ -443,17 +443,17 @@ _integ_detected_and_treated_tb = Integ(
     comp_subtype="Normal",
 )
 def relapse_rate():
-    return 0.0079857
+    return 0.00908
 
 
 @component.add(
-    name="force of infection",
+    name="transmission rate",
     units="1/Month",
     comp_type="Constant",
     comp_subtype="Normal",
 )
-def force_of_infection():
-    return 0.072
+def transmission_rate():
+    return 0.05679
 
 
 @component.add(
@@ -464,4 +464,4 @@ def force_of_infection():
     comp_subtype="Normal",
 )
 def progression_rate():
-    return 0.04973
+    return 0.72

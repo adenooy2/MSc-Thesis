@@ -87,17 +87,17 @@ general mortality=
 	~		|
 
 infection=
-	force of infection*Susceptible*(Active/total pop)
+	transmission rate*Susceptible*(Active/total pop)
 	~	People/Month
 	~		|
 
 initial incident=
-	3e+06
+	2.1e+06
 	~	People [0,2e+06,50000]
 	~		|
 
 initial latent=
-	1e+06
+	184000
 	~	People [0,2e+06]
 	~		|
 
@@ -119,17 +119,17 @@ Detected and Treated TB= INTEG (
 	~		|
 
 relapse rate=
-	0.0079857
+	0.00908
 	~	1/Month [0,0.1]
 	~		|
 
-force of infection=
-	0.072
+transmission rate=
+	0.05679
 	~	1/Month
 	~		|
 
 progression rate=
-	0.04973
+	0.72
 	~	1/Month [0,0.2,0.001]
 	~		|
 
@@ -175,7 +175,7 @@ $-1--1--1,0,|12||-1--1--1|-1--1--1|-1--1--1|-1--1--1|-1--1--1|96,96,74,0
 11,10,0,1038,611,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
 10,11,progression,1038,628,36,9,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
 1,12,3,10,1,0,43,0,0,192,0,-1--1--1,,1|(984,553)|
-10,13,force of infection,714,383,41,5,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,13,transmission rate,714,383,41,5,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
 1,14,13,6,1,0,43,0,0,192,0,-1--1--1,,1|(735,489)|
 10,15,progression rate,1098,381,48,9,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
 1,16,15,10,0,0,0,0,0,192,0,-1--1--1,,1|(0,0)|
@@ -277,7 +277,7 @@ total pop,Graph
 :L<%^E!@
 1:current.vdfx
 4:Time
-5:diagnosis delay
+5:progression rate
 9:current
 19:74,0
 24:0
