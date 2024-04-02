@@ -2104,14 +2104,15 @@ however, later it will be useful to compare other variables - like cases
 detected.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuI0NvbGxlY3QgaW5jaWRlbmNlIGRhdGEgaW4gY29ycmVjdCBmb3JtYXQgLSBrZXkgdmFyaWFibGVzIGFuZCB3aWRlIGZvcm1hdFxuY2FsX2RhdGE9YWxsX2luYyAlPiUgc2VsZWN0KHllYXIsIHZhcixlc3RfdHlwZSx2YWx1ZSkgJT4lIHNwcmVhZChlc3RfdHlwZSx2YWx1ZSkgJT4lIGZpbHRlcih2YXI9PVwiZV9pbmNfbnVtXCIpXG5cbiNTYXZlIGRhdGFcbndyaXRlLmNzdihjYWxfZGF0YSxcIi9Vc2Vycy9hZGVub295L0xpYnJhcnkvQ2xvdWRTdG9yYWdlL09uZURyaXZlLVBlcnNvbmFsL1VWQS9UaGVzaXMvTVNjLVRoZXNpcy9kYXRhL2R5bmFtaWMvY2FsaWJyYXRpb25faW5jaWRlbmNlLmNzdlwiKVxuXG5cbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuI0NvbGxlY3QgaW5jaWRlbmNlIGRhdGEgaW4gY29ycmVjdCBmb3JtYXQgLSBrZXkgdmFyaWFibGVzIGFuZCB3aWRlIGZvcm1hdFxuY2FsX2RhdGE9YWxsX2luYyAlPiUgc2VsZWN0KHllYXIsIHZhcixlc3RfdHlwZSx2YWx1ZSkgJT4lIHNwcmVhZChlc3RfdHlwZSx2YWx1ZSkgJT4lIGZpbHRlcih2YXI9PVwiZV9pbmNfbnVtXCIpXG5cbmBgYCJ9 -->
 <pre class="r"><code>#Collect incidence data in correct format - key variables and wide format
 cal_data=all_inc %&gt;% select(year, var,est_type,value) %&gt;% spread(est_type,value) %&gt;% filter(var==&quot;e_inc_num&quot;)
-
-#Save data
-write.csv(cal_data,&quot;/Users/adenooy/Library/CloudStorage/OneDrive-Personal/UVA/Thesis/MSc-Thesis/data/dynamic/calibration_incidence.csv&quot;)
 </code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gc2VsZWN0KC4sIHllYXIsIHZhciwgZXN0X3R5cGUsIHZhbHVlKSA6IFxuICBvYmplY3QgJ2FsbF9pbmMnIG5vdCBmb3VuZFxuIn0= -->
+<pre><code>Error in select(., year, var, est_type, value) : 
+  object &#39;all_inc&#39; not found</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
