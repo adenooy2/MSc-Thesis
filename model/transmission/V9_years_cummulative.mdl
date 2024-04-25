@@ -140,7 +140,7 @@ progression rate=
 		Simulation Control Parameters
 	|
 
-FINAL TIME  = 2022
+FINAL TIME  = 2021
 	~	Year
 	~	The final time for the simulation.
 	|

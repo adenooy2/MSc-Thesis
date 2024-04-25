@@ -25,7 +25,7 @@ component = Component()
 
 _control_vars = {
     "initial_time": lambda: 2000,
-    "final_time": lambda: 2022,
+    "final_time": lambda: 2021,
     "time_step": lambda: 1,
     "saveper": lambda: time_step(),
 }

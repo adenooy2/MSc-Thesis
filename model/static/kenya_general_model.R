@@ -14,8 +14,13 @@ n=10000
 runs=20
 basePath="/Users/adenooy/Library/CloudStorage/OneDrive-Personal/UVA/Thesis/MSc-Thesis/"
 
+scenarios=c("baseline","scenario1","scenario2","scenario3")
+
+for(j in 1:length(scenarios)){
+  scen=scenarios[j]  
+
 #Parameters
-params=read_excel(paste(basePath,"data/static/input/parameters.xlsx",sep=""),sheet="kenya")
+params=read_excel(paste(basePath,"data/static/input/parameters.xlsx",sep=""),sheet=scen)
 params_t= data.frame(t(params[-1]))
 colnames(params_t)=params$variable
 params_t$hiv=c(0,1,0,1)
@@ -23,7 +28,7 @@ params_t$tb_value_type=c("ptb","ptb","eptb","eptb")
 
 
 for (i in 1:runs){
- scen="baseline" 
+ 
 
 #Assign HIV and TB status for the population
 hiv=rbinom(n,1,params_t$propHIV[1])
@@ -41,6 +46,7 @@ sim_pop=simulate_population(pop,params_t)
 write.xlsx(sim_pop, paste(basePath,"data/static/output/",scen,"_","run_",i,".xlsx",sep=""))
 }
 
+}
 
 # scenario analysis -------------------------------------------------------
 temp=sim_pop %>% filter(tb_present==1) %>% filter(patient_conf_result_received==1)
