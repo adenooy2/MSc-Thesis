@@ -11,10 +11,11 @@ options(scipen=999)
 
 #Run Options
 n=10000
-runs=20
+runs=100
 basePath="/Users/adenooy/Library/CloudStorage/OneDrive-Personal/UVA/Thesis/MSc-Thesis/"
 
-scenarios=c("baseline","scenario1","scenario2","scenario3")
+scenarios=c("baseline","scenario1","scenario2","scenario3","scenario4","scenario5","scenario6")
+
 
 for(j in 1:length(scenarios)){
   scen=scenarios[j]  
