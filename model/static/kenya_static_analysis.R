@@ -101,12 +101,28 @@ baseCascade$case_detection=NULL
 baseCascade=baseCascade %>% gather(variable,count)
 baseCascade$perc=round(baseCascade$count/max(baseCascade$count)*100,1)
 
+baseCascade$var_lab=c("Provided sample","Received TB positive diagnosis","Offered testing","Individuals with TB","Sought care")
+
+temp=baseCascade %>% select(var_lab,variable)
+
 #Plot tB cascade baseline
-ggplot(baseCascade,aes(x=reorder(variable,-count),y=count,fill=variable))+
+ggplot(baseCascade,aes(x=reorder(var_lab,-count),y=count,fill=variable))+
   geom_bar(stat="identity")+theme_bw()+xlab("Pathway Point")+ylab("Number of individuals")+
   labs(title="Percentage of individuals with TB reaching differents points in the patient diagnostic journey")+
-  geom_text(aes(x=reorder(variable,-count),y=count+25,size=30,label=paste(perc,"%",sep="")))+
-  scale_x_discrete(guide = guide_axis(n.dodge=2))+theme(text = element_text(size=20))+theme(legend.position = "none")
+  geom_text(aes(x=reorder(var_lab,-count),y=count+25,size=30,label=paste(perc,"%",sep="")))+
+  theme(text = element_text(size=20))+theme(legend.position = "none")
+#scale_x_discrete(guide = guide_axis(n.dodge=2))
+
+#Plot scenario casacdes
+scenarioDataWide=scenarioData %>% gather(variable,value,1:6) %>% 
+  filter(variable!="case_detection") %>% 
+  arrange(scenario,desc(value)) %>% group_by(scenario) %>% 
+  mutate(max_scenario=max(value),perc=round(100*(value/max_scenario),0)) %>% 
+  left_join(temp)
 
 
-
+ggplot(scenarioDataWide,aes(x=reorder(var_lab,-value),y=value,fill=var_lab))+facet_wrap(.~scenario)+
+  geom_bar(stat="identity",position="dodge")+theme_bw()+xlab("Pathway Point")+ylab("Number of individuals")+
+  labs(title="Percentage of individuals with TB reaching differents points in the patient diagnostic journey")+
+  geom_text(aes(x=reorder(var_lab,-value),y=value+25,size=30,label=paste(perc,"%",sep="")))+
+  theme(text = element_text(size=16))+theme(legend.position = "none")+scale_x_discrete(guide = guide_axis(n.dodge=2))
