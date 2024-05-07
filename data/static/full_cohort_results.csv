@@ -1,0 +1,8 @@
+"","scenario","all_individuals","all_sought_care","all_offered_testing","all_reach_sample_site","all_provide_sample","all_sample_tested","all_patients_received_results"
+"1","baseline",10000,9503,7792,7609,7581,7456,6860
+"2","scenario1",10000,9500,7789,7605,7578,7453,6858
+"3","scenario2",10000,9499,7788,7606,7578,7578,6968
+"4","scenario3",10000,9500,7796,7796,7766,7766,7766
+"5","scenario4",10000,9504,9029,8819,8813,8667,7969
+"6","scenario5",10000,9506,9032,8819,8814,8814,8112
+"7","scenario6",10000,9500,9026,9026,9020,9020,9020
