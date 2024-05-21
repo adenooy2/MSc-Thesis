@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from pysd.py_backend.functions import ramp
-from pysd.py_backend.statefuls import Delay, Integ, Smooth
+from pysd.py_backend.statefuls import Integ, Delay, Smooth
 from pysd import Component
 
 __pysd_version__ = "3.7.1"

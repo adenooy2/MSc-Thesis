@@ -127,7 +127,7 @@ baseCascade=scenarioData %>% filter(scenario=="baseline") %>% select(tb_present,
 baseCascade=baseCascade %>% gather(variable,count)
 baseCascade$perc=round(baseCascade$count/max(baseCascade$count)*100,1)
 
-baseCascade$var_lab=c("Provided sample","Received TB positive diagnosis","Offered testing","Individuals with TB","Sought care")
+baseCascade$var_lab=c("Individuals with TB","Sought care","Offered testing","Provided sample","Received TB positive diagnosis")
 
 temp=baseCascade %>% select(var_lab,variable)
 
