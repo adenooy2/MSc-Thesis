@@ -162,7 +162,7 @@ INITIAL TIME  = 2000
 	|
 
 SAVEPER  = 
-        TIME STEP 
+        TIME STEP
 	~	Year [0,?]
 	~	The frequency with which output is stored.
 	|
@@ -316,7 +316,8 @@ Active,Graph
 12,124,0,2093,331,215,117,8,15,0,0,2,0,0,0,0,0,0,0,0,0
 Detected and Treated TB,Graph
 12,125,0,346,330,300,200,0,15,0,0,2,0,0,0,0,0,0,0,0,0
-Detected and Treated TB,Table Time Down
+Susceptible,Table Time Down
+12,126,0,703,268,80,65,0,11,0,0,0,0,0,0,0,0,0,0,0,0
 ///---\\\
 :L<%^E!@
 1:current.vdfx
