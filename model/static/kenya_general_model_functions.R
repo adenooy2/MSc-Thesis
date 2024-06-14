@@ -44,10 +44,13 @@ assign_rif=function(group,group_size,currentParams){
 seek_care=function(group,group_size,currentParams){
   group$num_visits=0
   group$patient_time=0
-  group$tb_seek_care=0
   
+  
+  group$tb_seek_care=0
   group$rnum=runif(group_size)
   group$tb_seek_care[group$rnum<currentParams$p_visit]=1
+  
+  
   group$num_visits[group$tb_seek_care==1]=group$num_visits[group$tb_seek_care==1]+1
   group$patient_time[group$tb_seek_care==1]=group$patient_time[group$tb_seek_care==1]+currentParams$time_seek_care
   
